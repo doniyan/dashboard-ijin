@@ -308,6 +308,49 @@
       letter-spacing: 0.5px;
     }
 
+    /* Table Controls */
+    .table-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #f8f9ff, #e8edff);
+      border-radius: 12px;
+      border: 1px solid #e1e7ff;
+    }
+
+    .rows-per-page {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .rows-per-page select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 2px solid #e1e7ff;
+      background: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .rows-per-page select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .table-info {
+      font-weight: 600;
+      color: #666;
+      font-size: 14px;
+    }
+
     .table-wrapper {
       overflow-x: auto;
       border-radius: 20px;
@@ -396,10 +439,8 @@
     .pagination {
       margin-top: 30px;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 20px;
       padding: 25px;
       background: linear-gradient(135deg, #f8f9ff, #e8edff);
       border-radius: 20px;
@@ -408,12 +449,19 @@
 
     .pagination-info {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 15px;
-      margin-bottom: 15px;
       font-size: 14px;
       color: #666;
       font-weight: 600;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .pagination-stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
     .pagination-controls {
@@ -611,6 +659,12 @@
         align-items: stretch;
         gap: 15px;
       }
+
+      .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+      }
       
       .filter-box {
         grid-template-columns: 1fr;
@@ -623,13 +677,29 @@
       }
       
       .pagination {
-        gap: 5px;
+        gap: 15px;
+      }
+
+      .pagination-info {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .pagination-stats {
+        justify-content: center;
+        gap: 15px;
       }
       
       .pagination button {
         padding: 10px 12px;
         font-size: 12px;
         min-width: 40px;
+      }
+
+      .pagination-controls {
+        gap: 5px;
       }
     }
 
@@ -726,6 +796,23 @@
         </select>
       </div>
 
+      <!-- Table Controls -->
+      <div class="table-controls">
+        <div class="rows-per-page">
+          <span>📋 Tampilkan:</span>
+          <select id="rowsPerPageSelect" onchange="changeRowsPerPage()">
+            <option value="5">5 baris</option>
+            <option value="10" selected>10 baris</option>
+            <option value="25">25 baris</option>
+            <option value="50">50 baris</option>
+            <option value="100">100 baris</option>
+          </select>
+        </div>
+        <div class="table-info" id="tableInfo">
+          Menampilkan 0 dari 0 data
+        </div>
+      </div>
+
       <div class="table-wrapper">
         <table id="dataTable">
           <thead>
@@ -755,7 +842,7 @@
     let allData = [];
     let filteredData = [];
     let currentPage = 1;
-    const rowsPerPage = 10;
+    let rowsPerPage = 10;
 
     // Update time and date
     function updateTimeDate() {
@@ -801,6 +888,22 @@
       document.getElementById("totalSakit").textContent = totalSakit;
 
       document.getElementById("statsGrid").style.display = totalSiswa > 0 ? "grid" : "none";
+    }
+
+    function updateTableInfo() {
+      const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+      const startItem = filteredData.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+      const endItem = Math.min(currentPage * rowsPerPage, filteredData.length);
+      
+      document.getElementById("tableInfo").innerHTML = 
+        `📊 Menampilkan ${startItem}-${endItem} dari ${filteredData.length} data ${filteredData.length !== allData.length ? `(difilter dari ${allData.length} total)` : ''}`;
+    }
+
+    function changeRowsPerPage() {
+      const select = document.getElementById("rowsPerPageSelect");
+      rowsPerPage = parseInt(select.value);
+      currentPage = 1;
+      renderTable();
     }
 
     async function loadData() {
@@ -861,6 +964,7 @@
         </tr>
       `;
       document.getElementById("pagination").innerHTML = "";
+      updateTableInfo();
     }
 
     function applyFilters() {
@@ -890,6 +994,7 @@
         `;
         document.getElementById("pagination").innerHTML = "";
       }
+      updateTableInfo();
     }
 
     function getStatusBadge(value, type) {
@@ -928,9 +1033,10 @@
       const pageData = filteredData.slice(start, end);
 
       pageData.forEach((row, index) => {
+        const globalIndex = start + index + 1;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><strong>${start + index + 1}</strong></td>
+          <td><strong>${globalIndex}</strong></td>
           <td><strong>${row.nama}</strong></td>
           <td><span style="font-family: monospace; background: #f8f9ff; padding: 4px 8px; border-radius: 6px;">${row.kodeSiswa}</span></td>
           <td><span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">${row.kelas}</span></td>
@@ -941,6 +1047,7 @@
         tbody.appendChild(tr);
       });
 
+      updateTableInfo();
       renderPagination();
     }
 
@@ -958,8 +1065,11 @@
 
       pagination.innerHTML = `
         <div class="pagination-info">
-          <span>📄 Menampilkan ${startItem}-${endItem} dari ${filteredData.length} data</span>
-          <span>📑 Halaman ${currentPage} dari ${totalPages}</span>
+          <div class="pagination-stats">
+            <span>📄 Halaman ${currentPage} dari ${totalPages}</span>
+            <span>📊 ${startItem}-${endItem} dari ${filteredData.length}</span>
+            <span>🔢 ${rowsPerPage} per halaman</span>
+          </div>
         </div>
         <div class="pagination-controls" id="paginationControls"></div>
       `;
@@ -968,7 +1078,8 @@
 
       // First button
       const firstBtn = document.createElement("button");
-      firstBtn.innerHTML = "⏮️ Pertama";
+      firstBtn.innerHTML = "⏮️";
+      firstBtn.title = "Halaman Pertama";
       firstBtn.className = "pagination-nav";
       firstBtn.disabled = currentPage === 1;
       firstBtn.onclick = () => { 
@@ -980,7 +1091,8 @@
 
       // Previous button
       const prevBtn = document.createElement("button");
-      prevBtn.innerHTML = "◀️ Sebelumnya";
+      prevBtn.innerHTML = "◀️";
+      prevBtn.title = "Halaman Sebelumnya";
       prevBtn.className = "pagination-nav";
       prevBtn.disabled = currentPage === 1;
       prevBtn.onclick = () => { 
@@ -990,10 +1102,29 @@
       };
       controls.appendChild(prevBtn);
 
-      // Page numbers around current page
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, currentPage + 2);
+      // Page numbers with smart pagination
+      const maxVisiblePages = 5;
+      let startPage, endPage;
 
+      if (totalPages <= maxVisiblePages) {
+        startPage = 1;
+        endPage = totalPages;
+      } else {
+        const halfVisible = Math.floor(maxVisiblePages / 2);
+        
+        if (currentPage <= halfVisible) {
+          startPage = 1;
+          endPage = maxVisiblePages;
+        } else if (currentPage + halfVisible >= totalPages) {
+          startPage = totalPages - maxVisiblePages + 1;
+          endPage = totalPages;
+        } else {
+          startPage = currentPage - halfVisible;
+          endPage = currentPage + halfVisible;
+        }
+      }
+
+      // Add first page and ellipsis if needed
       if (startPage > 1) {
         const btn = document.createElement("button");
         btn.textContent = "1";
@@ -1013,6 +1144,7 @@
         }
       }
 
+      // Add visible page numbers
       for (let i = startPage; i <= endPage; i++) {
         const btn = document.createElement("button");
         btn.textContent = i;
@@ -1028,6 +1160,7 @@
         controls.appendChild(btn);
       }
 
+      // Add last page and ellipsis if needed
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
           const dots = document.createElement("button");
@@ -1049,7 +1182,8 @@
 
       // Next button
       const nextBtn = document.createElement("button");
-      nextBtn.innerHTML = "▶️ Selanjutnya";
+      nextBtn.innerHTML = "▶️";
+      nextBtn.title = "Halaman Selanjutnya";
       nextBtn.className = "pagination-nav";
       nextBtn.disabled = currentPage === totalPages;
       nextBtn.onclick = () => { 
@@ -1061,7 +1195,8 @@
 
       // Last button
       const lastBtn = document.createElement("button");
-      lastBtn.innerHTML = "⏭️ Terakhir";
+      lastBtn.innerHTML = "⏭️";
+      lastBtn.title = "Halaman Terakhir";
       lastBtn.className = "pagination-nav";
       lastBtn.disabled = currentPage === totalPages;
       lastBtn.onclick = () => { 
@@ -1075,9 +1210,9 @@
       const jumpDiv = document.createElement("div");
       jumpDiv.className = "pagination-jump";
       jumpDiv.innerHTML = `
-        <span>Ke halaman:</span>
-        <input type="number" id="pageJump" min="1" max="${totalPages}" value="${currentPage}">
-        <button onclick="jumpToPage()">Pergi</button>
+        <span>Ke:</span>
+        <input type="number" id="pageJump" min="1" max="${totalPages}" value="${currentPage}" placeholder="hal">
+        <button onclick="jumpToPage()" title="Pergi ke halaman">Pergi</button>
       `;
       controls.appendChild(jumpDiv);
     }
@@ -1092,14 +1227,14 @@
         renderTable();
         document.getElementById("paginationControls").scrollIntoView({ behavior: 'smooth' });
       } else {
-        alert(`Halaman harus antara 1 dan ${totalPages}`);
+        alert(`❌ Halaman harus antara 1 dan ${totalPages}`);
         pageInput.value = currentPage;
       }
     }
 
     function exportPDF() {
       if (filteredData.length === 0) {
-        alert("Tidak ada data untuk diekspor!");
+        alert("❌ Tidak ada data untuk diekspor!");
         return;
       }
 
@@ -1114,14 +1249,14 @@
       doc.setFont(undefined, 'normal');
       doc.text("SDN 2 Karangmangu", 14, 25);
       doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 32);
-      doc.text(`Total Data: ${filteredData.length} siswa`, 14, 39);
+      doc.text(`Total Data: ${filteredData.length} siswa${filteredData.length !== allData.length ? ` (dari ${allData.length} total)` : ''}`, 14, 39);
 
       // Statistics
       const totalIzin = filteredData.reduce((sum, row) => sum + (parseInt(row.izin) || 0), 0);
       const totalAlpha = filteredData.reduce((sum, row) => sum + (parseInt(row.alpha) || 0), 0);
       const totalSakit = filteredData.reduce((sum, row) => sum + (parseInt(row.sakit) || 0), 0);
       
-      doc.text(`Total Izin: ${totalIzin}, Total Alpha: ${totalAlpha}, Total Sakit: ${totalSakit}`, 14, 46);
+      doc.text(`📊 Statistik - Izin: ${totalIzin}, Alpha: ${totalAlpha}, Sakit: ${totalSakit}`, 14, 46);
 
       // Table
       doc.autoTable({
@@ -1148,10 +1283,19 @@
         },
         alternateRowStyles: {
           fillColor: [248, 249, 255]
+        },
+        didDrawPage: function(data) {
+          // Add page numbers
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageSize = doc.internal.pageSize;
+          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+          doc.setFontSize(10);
+          doc.text(`Halaman ${data.pageNumber} dari ${pageCount}`, 14, pageHeight - 10);
         }
       });
 
-      doc.save(`laporan-data-siswa-${new Date().toISOString().split('T')[0]}.pdf`);
+      const fileName = `laporan-data-siswa-${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
       
       // Show success message
       setStatus("✅ PDF berhasil diunduh!", "status-success");
@@ -1159,6 +1303,56 @@
         setStatus(`✅ Data aktif (${allData.length} siswa)`, "status-success");
       }, 3000);
     }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey) {
+        switch(e.key) {
+          case 'r':
+          case 'R':
+            e.preventDefault();
+            loadData();
+            break;
+          case 'e':
+          case 'E':
+            e.preventDefault();
+            exportPDF();
+            break;
+        }
+      }
+      
+      // Navigation shortcuts (when not in input fields)
+      if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        
+        switch(e.key) {
+          case 'ArrowLeft':
+            if (currentPage > 1) {
+              currentPage--;
+              renderTable();
+            }
+            break;
+          case 'ArrowRight':
+            if (currentPage < totalPages) {
+              currentPage++;
+              renderTable();
+            }
+            break;
+          case 'Home':
+            if (currentPage !== 1) {
+              currentPage = 1;
+              renderTable();
+            }
+            break;
+          case 'End':
+            if (currentPage !== totalPages) {
+              currentPage = totalPages;
+              renderTable();
+            }
+            break;
+        }
+      }
+    });
 
     // Auto-refresh every 5 minutes
     setInterval(() => {
@@ -1174,8 +1368,14 @@
       }
     });
 
-    window.onload = loadData;
-  </script>
-</body>
-
-</html>
+    // Initialize
+    window.onload = function() {
+      loadData();
+      
+      // Add keyboard shortcuts info to console
+      console.log('🎯 Keyboard Shortcuts:');
+      console.log('Ctrl+R: Refresh Data');
+      console.log('Ctrl+E: Export PDF');
+      console.log('Arrow Keys: Navigate Pages');
+      console.log('Home/End: First/Last Page');
+    };
